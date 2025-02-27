@@ -8,9 +8,6 @@ import os
 
 from utils.kotokenize import *
 
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(DEVICE)
-
 class DecoderBlock(nn.Module) :
     def __init__(self, context_length, embedding_size, head_size, num_heads):
         super().__init__()
@@ -124,6 +121,7 @@ class AttentionLanguageModel(nn.Module) :
 
     # 임베딩 통과 -> Cross Entropy 계산
     def forward(self, idx, targets=None) :
+        device = idx.device
         
         B,T = idx.shape
 
@@ -131,7 +129,7 @@ class AttentionLanguageModel(nn.Module) :
         tok_emb = self.token_embedding_table(idx) 
 
         # (context_length, embedding_size)
-        pos_emb = self.position_embedding_table(torch.arange(T, device=DEVICE)) # 해당 time step의 x의 context 길이에 맞게 pos_emb를 추출
+        pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # 해당 time step의 x의 context 길이에 맞게 pos_emb를 추출
 
         # (Batch size, context_length, embedding_size), pos_emb에서 broadcasting 발생
         x = tok_emb + pos_emb 
