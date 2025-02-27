@@ -1,6 +1,6 @@
 import torch
 import argparse
-import matplotlib.pyplot as plt
+import os
 
 from utils.kotokenize import *
 from utils.attention import AttentionLanguageModel
@@ -49,20 +49,28 @@ def save_checkpoint(model, optimizer, epoch, loss, filename='checkpoint.pth') :
 
 if __name__ == "__main__" :
 
-    # SEED = 486
-    # random.seed(SEED)
-    # np.random.seed(SEED)
-
+    
     args = parse_arguments()
 
     print("===========================================")
-    print("Now Training model...")
+    print("\tNow Training model...")
     print("===========================================")
-    
+
+    ### =======================================================================
+    ### Device Setting 
+    ### =======================================================================
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(DEVICE)
 
-    # build tokenizer
+
+
+    ### =======================================================================
+    ### Build tokenizer
+    ### =======================================================================
+
+    if not os.path.exists(args.out_folder):
+        os.makedirs(args.out_folder)
+
     if args.character_level_token :
         tokenizer = KorCharTokenizer(args.data_path)
         VOCAB_SIZE = len(tokenizer)
@@ -82,14 +90,23 @@ if __name__ == "__main__" :
         tokenizer.save_model(("{}/").format(args.out_folder))
         VOCAB_SIZE = tokenizer.get_vocab_size()
 
-    print(tokenizer.get_vocab_size())
-    
-    # model
+    print(tokenizer.get_vocab_size())    
+
+
+
+
+    ### =======================================================================
+    ### model
+    ### =======================================================================
     model = AttentionLanguageModel(VOCAB_SIZE, args.embedding_size, args.context_length, args.head_size, args.num_heads, args.num_blocks)
     model.to(DEVICE)
     model.train()
 
-    # data prep
+
+
+    ### =======================================================================
+    ### Data prep
+    ### =======================================================================
     with open(args.data_path, "r", encoding="utf-8") as f :
         full_text = f.read()
         
@@ -100,19 +117,12 @@ if __name__ == "__main__" :
     
     train_data, val_data = train_val_split(data, 0.9)
     
-    # 생성 - 학습 전
-    # sample_text = " "
-    # idx = torch.tensor(tokenizer.encode(sample_text), dtype=torch.long).unsqueeze(0).to(DEVICE)
-    # output = model.generate(idx, max_new_tokens=args.max_new_tokens)
-    # print(tokenizer.decode(output[0].tolist()))
 
-    # 학습 세팅
+    ### =======================================================================
+    ### Training
+    ### =======================================================================
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
-    # Logging
-    # losses = []
-
-    # 학습
     for steps in tqdm(range(1,args.epoch+1), desc= "TRAINING STEP") :
         
         xb, yb = get_batch("train", train_data, val_data, args.context_length, args.batch_size)
@@ -138,13 +148,8 @@ if __name__ == "__main__" :
 
     print("Final Loss : {}".format(loss.item()))
 
-    # 생성 - 학습 후
-    # print(tokenizer.decode(model.generate(idx, max_new_tokens=args.max_new_tokens)[0].tolist()))
 
-    # Plotting
-    # plt.plot(losses)
-    # plt.title("Loss by epoch")
-    # plt.savefig("./attention_loss.png")
+
 
 
 ### Done ====================================
@@ -152,8 +157,8 @@ if __name__ == "__main__" :
 # TODO : eval loss 계산해 출력
 # TODO : Decoder Block size 변경하기
 # TODO : 이 상황에서는 argmax를 해도 되지 않나? -> 생성 전략의 차이. https://www.packtpub.com/en-us/learning/how-to-tutorials/exploring-token-generation-strategies?srsltid=AfmBOopu9q3ZAiCC7hCPNsscB_Zk-Gkj3_hKdiQFkwaEVbdSl0CWQxHF
+# TODO : Tokenizer 변경하기
 ### =========================================
 
-# TODO : Tokenizer 변경하기
 # TODO : wandb 연결하기
 # TODO : Trainer에 옮겨야지

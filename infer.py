@@ -16,7 +16,7 @@ def parse_arguments() :
     parser.add_argument('--data_path', type=str, default="data/")
     parser.add_argument('--vocab_path', type=str, default="models/")
 
-    parser.add_argument('--character_level_token', type=int, default=0)
+    parser.add_argument('--character_level_token', type=int, default=1)
 
     parser.add_argument('--context_length', type=int, default=256)
     parser.add_argument('--embedding_size', type=int, default=256)
@@ -43,20 +43,25 @@ def load_checkpoint(filename, model, optimizer=None):
 
 if __name__ == "__main__" :
 
-    SEED = 486
-    random.seed(SEED)
-    np.random.seed(SEED)
-
     args = parse_arguments()
 
     print("===========================================")
     print("Now Inferring from {} model...".format(args.model_path))
     print("===========================================")
-    
+
+
+
+    ### =======================================================================
+    ### Device Setting 
+    ### =======================================================================    
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(DEVICE)
 
-    # build tokenizer
+
+
+    ### =======================================================================
+    ### Build Tokenizer
+    ### =======================================================================
     if args.character_level_token :
         tokenizer = KorCharTokenizer(args.data_path)
         VOCAB_SIZE = len(tokenizer)
@@ -64,16 +69,22 @@ if __name__ == "__main__" :
         tokenizer = BertTokenizerFast.from_pretrained(args.vocab_path, strip_accents=False, lowercase=False)
         VOCAB_SIZE = tokenizer.vocab_size
     
-    # model
+
+    ### =======================================================================
+    ### Model
+    ### =======================================================================
     model = AttentionLanguageModel(VOCAB_SIZE, args.embedding_size, args.context_length, args.head_size, args.num_heads, args.num_blocks)
     epoch, loss = load_checkpoint(args.model_path, model)
     print("Model Loaded! Loss {} on Epoch {}".format(loss, epoch))
     model.to(DEVICE)
     model.eval()
     
-    # 생성
+    
+    
+    ### =======================================================================
+    ### Generation
+    ### =======================================================================
     sample_text = args.sample_text
     idx = torch.tensor(tokenizer.encode(sample_text), dtype=torch.long).unsqueeze(0).to(DEVICE)
     output = model.generate(idx, max_new_tokens=args.max_new_tokens, auto=args.auto_gen, tokenizer=tokenizer)
-    # output = model.generate(idx, max_new_tokens=args.max_new_tokens)
     print(tokenizer.decode(output[0].tolist()))
