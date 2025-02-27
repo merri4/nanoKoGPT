@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import argparse
 import os
 
-from kotokenize import *
+from utils.kotokenize import *
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(DEVICE)

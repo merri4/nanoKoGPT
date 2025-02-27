@@ -1,4 +1,5 @@
-data/
+data/*
 deprecated/
-models/
+models/*
 commands.sh
+utils/__pycache__

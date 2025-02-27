@@ -1,13 +1,10 @@
 import torch
 import argparse
-import numpy as np
-import random
 import matplotlib.pyplot as plt
 
 from utils.kotokenize import *
 from utils.attention import AttentionLanguageModel
 from tokenizers import BertWordPieceTokenizer
-
 
 def parse_arguments() :
 
@@ -25,7 +22,7 @@ def parse_arguments() :
     parser.add_argument('--embedding_size', type=int, default=256)
     parser.add_argument('--head_size', type=int, default=128)
     parser.add_argument('--num_heads', type=int, default=8)
-    parser.add_argument('--num_blocks', type=int, default=3)
+    parser.add_argument('--num_blocks', type=int, default=6)
     
     # Training parameters
     parser.add_argument('--batch_size', type=int, default=64)
@@ -59,7 +56,7 @@ if __name__ == "__main__" :
     args = parse_arguments()
 
     print("===========================================")
-    # print("Now Training {} model...".format(args.model_path))
+    print("Now Training model...")
     print("===========================================")
     
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -70,13 +67,19 @@ if __name__ == "__main__" :
         tokenizer = KorCharTokenizer(args.data_path)
         VOCAB_SIZE = len(tokenizer)
     else :
-        tokenizer = BertWordPieceTokenizer()
+        tokenizer = BertWordPieceTokenizer(
+            clean_text=False,
+            handle_chinese_chars=False,
+            strip_accents=True, # False로 하면 자소분리됨
+            lowercase=True # 대소문자 구분 (한국어는 상관 x)
+            )
         tokenizer.train(
             files=args.data_path,
             vocab_size=3000,
             limit_alphabet=500,
             min_frequency=2,
             )
+        tokenizer.save_model(("{}/").format(args.out_folder))
         VOCAB_SIZE = tokenizer.get_vocab_size()
 
     print(tokenizer.get_vocab_size())
